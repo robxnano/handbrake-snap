@@ -69,15 +69,18 @@ parts:
     source: https://github.com/robxnano/handbrake.git
     source-branch: snap
     parse-info: [usr/share/metainfo/fr.handbrake.ghb.metainfo.xml]
-    plugin: autotools
+    plugin: make
     override-build: |
       cd ..
       rm -rf build
       mkdir -p build
       cd build
       ${CRAFT_PART_SRC}/configure --prefix=/usr --enable-qsv --snap
-      make -j${CRAFT_PARALLEL_BUILD_COUNT}
+      craftctl default
     build-packages:
+      - autoconf
+      - automake
+      - autopoint
       - cmake
       - libbz2-dev
       - libicu-dev
@@ -87,6 +90,8 @@ parts:
       - libopus-dev
       - libspeex-dev
       - libtheora-dev
+      - libtool
+      - libtool-bin
       - libturbojpeg0-dev
       - libvorbis-dev
       - libvpx-dev
