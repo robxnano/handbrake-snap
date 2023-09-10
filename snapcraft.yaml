@@ -1,0 +1,118 @@
+name: handbrake-gui
+adopt-info: handbrake
+version: 1.7.0-git
+grade: stable
+confinement: strict
+base: core22
+compression: lzo
+
+apps:
+  ghb:
+    command: usr/bin/ghb
+    common-id: fr.handbrake.ghb.desktop
+    desktop: usr/share/applications/fr.handbrake.ghb.desktop
+    extensions: [gnome]
+    plugs:
+      - home
+      - removable-media
+      - screen-inhibit-control
+      - shutdown
+      - upower-observe
+  HandBrakeCLI:
+    command: usr/bin/HandBrakeCLI
+    common-id: fr.handbrake.HandBrakeCLI
+    extensions: [gnome]
+    plugs:
+      - home
+      - removable-media
+
+parts:
+  gstreamer:
+    source-type: git
+    source: https://gitlab.freedesktop.org/gstreamer/gstreamer.git
+    source-depth: 1
+    source-tag: '1.20'
+    plugin: meson
+    meson-parameters:
+      - --prefix=/usr
+      - -Dauto_features=disabled
+      - -Dbad=enabled
+      - -Dugly=disabled
+      - -Ddevtools=disabled
+      - -Dges=disabled
+      - -Dgpl=enabled
+      - -Dgst-plugins-bad:aom=enabled
+      - -Dbuildtype=release
+    build-packages:
+      - flex
+      - bison
+      - libaom-dev
+    stage-packages:
+      - libaom3
+    prime:
+      - -usr/bin/gst-transcoder-1.0
+      - -usr/include
+      - -usr/lib/$CRAFT_ARCH_TRIPLET/cmake
+      - -usr/lib/$CRAFT_ARCH_TRIPLET/lib*.a
+      - -usr/lib/$CRAFT_ARCH_TRIPLET/lib*.la
+      - -usr/lib/$CRAFT_ARCH_TRIPLET/lib*.so
+      - -usr/lib/$CRAFT_ARCH_TRIPLET/pkgconfig
+      - -usr/libexec
+      - -usr/share/doc
+
+  handbrake:
+    after: [gstreamer]
+    source-type: git
+    source: https://github.com/robxnano/handbrake.git
+    source-branch: snap
+    parse-info: [usr/share/metainfo/fr.handbrake.ghb.metainfo.xml]
+    plugin: autotools
+    override-build: |
+      cd ..
+      rm -rf build
+      mkdir -p build
+      cd build
+      ${CRAFT_PART_SRC}/configure --prefix=/usr --enable-qsv --snap
+      make -j${CRAFT_PARALLEL_BUILD_COUNT}
+    build-packages:
+      - cmake
+      - libbz2-dev
+      - libicu-dev
+      - libjansson-dev
+      - libmp3lame-dev
+      - libnuma-dev
+      - libopus-dev
+      - libspeex-dev
+      - libtheora-dev
+      - libturbojpeg0-dev
+      - libvorbis-dev
+      - libvpx-dev
+      - libx264-dev
+      - nasm
+    stage-packages:
+      - libblas3
+      - libjansson4
+      - libnuma1
+      - libturbojpeg
+      - libx264-163
+    prime:
+      - -usr/etc
+      - -usr/include
+      - -usr/lib/$CRAFT_ARCH_TRIPLET/cmake
+      - -usr/lib/$CRAFT_ARCH_TRIPLET/lib*.a
+      - -usr/lib/$CRAFT_ARCH_TRIPLET/lib*.la
+      - -usr/lib/$CRAFT_ARCH_TRIPLET/lib*.so
+      - -usr/lib/$CRAFT_ARCH_TRIPLET/pkgconfig
+      - -usr/lib/pkgconfig
+      - -usr/share/doc
+      - -usr/share/ffmpeg
+      - -usr/share/vpl
+
+  gstreamer-libav:
+    after: [handbrake]
+    source-type: tar
+    source: https://gstreamer.freedesktop.org/src/gst-libav/gst-libav-1.20.6.tar.xz
+    source-checksum: sha256/7d619a030542a4a5a11e0302742a3d9b05f8e5cfc453025683a0379bc50aa013
+    plugin: meson
+    meson-parameters:
+      - --prefix=/usr
