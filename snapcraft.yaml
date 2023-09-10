@@ -75,7 +75,7 @@ parts:
       rm -rf build
       mkdir -p build
       cd build
-      ${CRAFT_PART_SRC}/configure --prefix=/usr --enable-qsv --snap
+      ${CRAFT_PART_SRC}/configure --prefix=/usr --enable-qsv --disable-nvenc --disable-nvdec --disable-vce --snap
       craftctl default
     build-packages:
       - autoconf
