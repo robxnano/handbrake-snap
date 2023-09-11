@@ -4,8 +4,8 @@ confinement: strict
 base: core22
 compression: lzo
 architectures:
-  - amd64
-  - arm64
+  - build-on: amd64
+  - build-on: arm64
 
 apps:
   ghb:
