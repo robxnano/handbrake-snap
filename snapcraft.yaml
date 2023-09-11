@@ -88,7 +88,12 @@ parts:
       rm -rf build
       mkdir -p build
       cd build
-      ${CRAFT_PART_SRC}/configure --prefix=/usr --enable-qsv --disable-nvenc --disable-nvdec --disable-vce --snap
+      if [ "$CRAFT_TARGET_ARCH" = "amd64" ]; then
+        FLAG_QSV=--enable-qsv
+      else
+        FLAG_QSV=--disable-qsv
+      fi
+      ${CRAFT_PART_SRC}/configure --prefix=/usr "$FLAG_QSV" --disable-nvenc --disable-nvdec --disable-vce --snap
       craftctl default
     build-packages:
       - autoconf
