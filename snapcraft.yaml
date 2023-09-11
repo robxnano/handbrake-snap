@@ -114,6 +114,7 @@ parts:
       - nasm
       - pkg-config # needed to build cargo-c
       - rustc
+      - zlib1g-dev # needed to build cargo-c
     stage-packages:
       - libblas3
       - libjansson4
