@@ -70,7 +70,11 @@ parts:
     source-branch: snap
     parse-info: [usr/share/metainfo/fr.handbrake.ghb.metainfo.xml]
     plugin: make
+    # cargo-c is not in the Ubuntu 22.04 repositories
     override-build: |
+      curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --no-modify-path
+      export PATH=$HOME/.cargo/bin:$PATH
+      cargo install cargo-c --version ~0.8
       cd ..
       rm -rf build
       mkdir -p build
@@ -89,6 +93,7 @@ parts:
       - libnuma-dev
       - libopus-dev
       - libspeex-dev
+      - libssl-dev # needed to build cargo-c
       - libtheora-dev
       - libtool
       - libtool-bin
@@ -97,6 +102,8 @@ parts:
       - libvpx-dev
       - libx264-dev
       - nasm
+      - pkg-config # needed to build cargo-c
+      - rustc
     stage-packages:
       - libblas3
       - libjansson4
