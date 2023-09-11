@@ -70,12 +70,13 @@ parts:
     plugin: make
     override-pull: |
       craftctl default
-      GIT_REV="`git describe --tags | cut -f3 -d-`"
+      GIT_TAG="`git describe --tags | cut -f1 -d-`"
+      GIT_REV="`git describe --tags | cut -f3 -d- | sed 's/g//'`"
       if [ -n "$GIT_REV" ]; then
-        craftctl set version="git-$GIT_REV"
+        craftctl set version="$GIT_TAG-git-$GIT_REV"
         craftctl set grade="devel"
       else
-        craftctl set version="`git describe --tags`"
+        craftctl set version="$GIT_TAG"
         craftctl set grade="stable"
       fi
     # cargo-c is not in the Ubuntu 22.04 repositories
