@@ -94,6 +94,7 @@ parts:
       - automake
       - autopoint
       - cmake
+      - curl
       - libbz2-dev
       - libicu-dev
       - libjansson-dev
