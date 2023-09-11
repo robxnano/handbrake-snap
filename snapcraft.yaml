@@ -19,6 +19,10 @@ apps:
       - screen-inhibit-control
       - shutdown
       - upower-observe
+    environment:
+      LIBVA_DRIVER_NAME: iHD
+      LIBVA_DRIVERS_PATH: $SNAP/intel-plugin/lib/$CRAFT_ARCH_TRIPLET/dri
+      LD_LIBRARY_PATH: $LD_LIBRARY_PATH:$SNAP/intel-plugin/lib/$CRAFT_ARCH_TRIPLET
   HandBrakeCLI:
     command: usr/bin/HandBrakeCLI
     common-id: fr.handbrake.HandBrakeCLI
@@ -26,6 +30,16 @@ apps:
     plugs:
       - home
       - removable-media
+    environment:
+      LIBVA_DRIVER_NAME: iHD
+      LIBVA_DRIVERS_PATH: $SNAP/intel-plugin/lib/$CRAFT_ARCH_TRIPLET/dri
+      LD_LIBRARY_PATH: $LD_LIBRARY_PATH:$SNAP/intel-plugin/intel/lib/$CRAFT_ARCH_TRIPLET
+
+plugs:
+  intel-0-2204: # plugin_name-api_version-ubuntu_base
+    interface: content
+    content: intel-0-2204
+    target: $SNAP/intel-plugin/lib
 
 parts:
   gstreamer:
