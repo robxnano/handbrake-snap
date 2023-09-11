@@ -83,7 +83,7 @@ parts:
     override-build: |
       curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --no-modify-path
       export PATH=$HOME/.cargo/bin:$PATH
-      cargo install cargo-c --version ~0.8
+      cargo install cargo-c
       cd ..
       rm -rf build
       mkdir -p build
@@ -113,7 +113,6 @@ parts:
       - libx264-dev
       - nasm
       - pkg-config # needed to build cargo-c
-      - rustc
       - zlib1g-dev # needed to build cargo-c
     stage-packages:
       - libblas3
