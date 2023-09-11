@@ -73,7 +73,7 @@ parts:
       GIT_REV="`git describe --tags | cut -f3 -d-`"
       if [ -n "$GIT_REV" ]; then
         craftctl set version="git-$GIT_REV"
-        craftctl set grade="edge"
+        craftctl set grade="devel"
       else
         craftctl set version="`git describe --tags`"
         craftctl set grade="stable"
