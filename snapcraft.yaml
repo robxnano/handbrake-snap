@@ -1,5 +1,6 @@
-name: handbrake-gui # Change to handbrake for official release
+name: handbrake-gui # Change to 'handbrake' for official release
 adopt-info: handbrake
+grade: stable
 confinement: strict
 base: core22
 compression: lzo
@@ -41,28 +42,35 @@ plugs:
     target: $SNAP/intel-plugin/lib
 
 parts:
+  # cargo-c is not in Ubuntu 22.04 so use rustup to install the toolchain
+  rust-toolchain:
+    plugin: nil
+    override-pull: |
+      craftctl default
+      curl https://sh.rustup.rs -sSf | sh -s -- -y --profile minimal
+    override-build: |
+      source "$HOME/.cargo/env"
+      craftctl default
+      cargo install cargo-c
+    build-packages:
+      - libssl-dev
+      - pkg-config
+      - zlib1g-dev
+    prime:
+      - -**/*
+
   handbrake:
+    after: [rust-toolchain]
     source-type: git
-    source: https://github.com/robxnano/handbrake.git
-    source-branch: snap-static
+    source: https://github.com/robxnano/handbrake.git # change for official release
+    source-branch: snap # change for official release
     parse-info: [usr/share/metainfo/fr.handbrake.ghb.metainfo.xml]
     plugin: make
     override-pull: |
       craftctl default
-      GIT_TAG="`git describe --tags | cut -f1 -d-`"
-      GIT_REV="`git describe --tags | cut -f3 -d- | sed 's/g//'`"
-      if [ -n "$GIT_REV" ]; then
-        craftctl set version="$GIT_TAG-git-$GIT_REV"
-        craftctl set grade="devel"
-      else
-        craftctl set version="$GIT_TAG"
-        craftctl set grade="stable"
-      fi
-    # cargo-c is not in the Ubuntu 22.04 repositories so use the rustup toolchain
+      craftctl set version="`gtk/data/version.sh`"
     override-build: |
-      curl https://sh.rustup.rs -sSf | sh -s -- -y --no-modify-path --profile minimal
-      export PATH=$HOME/.cargo/bin:$PATH
-      cargo install cargo-c
+      source "$HOME/.cargo/env"
       cd ..
       rm -rf build
       mkdir -p build
@@ -89,7 +97,6 @@ parts:
       - libnuma-dev
       - libopus-dev
       - libspeex-dev
-      - libssl-dev # needed to build cargo-c
       - libtheora-dev
       - libtool
       - libtool-bin
@@ -98,8 +105,6 @@ parts:
       - libvpx-dev
       - libx264-dev
       - nasm
-      - pkg-config # needed to build cargo-c
-      - zlib1g-dev # needed to build cargo-c
     prime:
       - -usr/etc
       - -usr/include
@@ -113,7 +118,9 @@ parts:
       - -usr/share/ffmpeg
       - -usr/share/vpl
 
-  libraries: # Only use libraries required by ghb or libgstlibav.so
+  # Only include libraries required by ghb or libgstlibav.so which are not in
+  # the base or platform snap
+  libraries:
     plugin: nil
     stage-packages:
       - gstreamer1.0-libav
@@ -124,56 +131,67 @@ parts:
       - libturbojpeg
       - libx264-163
     prime:
-      - -usr/bin/fc-*
-      - -usr/bin/update-mime-database
-      - -usr/share/alsa
-      - -usr/share/apport
-      - -usr/share/bug
-      - -usr/share/doc
-      - -usr/share/doc-base
-      - -usr/share/fonts
-      - -usr/share/gettext
-      - -usr/share/gst-plugins-base
-      - -usr/share/iso-codes
-      - -usr/share/libmysofa
-      - -usr/share/libthai
-      - -usr/share/lintian
-      - -usr/share/man
-      - -usr/share/mfx
-      - -usr/share/mime
-      - -usr/share/pkgconfig
-      - -usr/share/X11
-      - -usr/share/xml
-      - -usr/lib/${CRAFT_ARCH_TRIPLET}/gdk-pixbuf-2.0
-      - -usr/lib/${CRAFT_ARCH_TRIPLET}/gstreamer1.0
-      - -usr/lib/${CRAFT_ARCH_TRIPLET}/gstreamer-1.0/libgstcoreelements.so
-      - -usr/lib/${CRAFT_ARCH_TRIPLET}/gstreamer-1.0/libgstcoretracers.so
-      - -usr/lib/${CRAFT_ARCH_TRIPLET}/libcairo-gobject.so*
-      - -usr/lib/${CRAFT_ARCH_TRIPLET}/libcairo.so*
-      - -usr/lib/${CRAFT_ARCH_TRIPLET}/libdw.so*
-      - -usr/lib/${CRAFT_ARCH_TRIPLET}/libdw-0.*.so
-      - -usr/lib/${CRAFT_ARCH_TRIPLET}/libflite_cmu_grapheme_lang.so*
-      - -usr/lib/${CRAFT_ARCH_TRIPLET}/libflite_cmu_grapheme_lex.so*
-      - -usr/lib/${CRAFT_ARCH_TRIPLET}/libflite_cmu_indic_lang.so*
-      - -usr/lib/${CRAFT_ARCH_TRIPLET}/libflite_cmu_indic_lex.so*
-      - -usr/lib/${CRAFT_ARCH_TRIPLET}/libflite_cmu_time_awb.so*
-      - -usr/lib/${CRAFT_ARCH_TRIPLET}/libgdk_pixbuf-2.0.so*
-      - -usr/lib/${CRAFT_ARCH_TRIPLET}/libharfbuzz.so*
-      - -usr/lib/${CRAFT_ARCH_TRIPLET}/libmfx-tracer.so*
-      - -usr/lib/${CRAFT_ARCH_TRIPLET}/libmfxhw64.so*
-      - -usr/lib/${CRAFT_ARCH_TRIPLET}/libpango-1.0.so*
-      - -usr/lib/${CRAFT_ARCH_TRIPLET}/libpangocairo-1.0.so*
-      - -usr/lib/${CRAFT_ARCH_TRIPLET}/libpangocairo-1.0.so*
-      - -usr/lib/${CRAFT_ARCH_TRIPLET}/libpangoft2-1.0.so*
-      - -usr/lib/${CRAFT_ARCH_TRIPLET}/libpixman-1.so*
-      - -usr/lib/${CRAFT_ARCH_TRIPLET}/libsphinxad.so*
-      - -usr/lib/${CRAFT_ARCH_TRIPLET}/libva-drm.so*
-      - -usr/lib/${CRAFT_ARCH_TRIPLET}/libva-x11.so*
-      - -usr/lib/${CRAFT_ARCH_TRIPLET}/libva.so*
-      - -usr/lib/${CRAFT_ARCH_TRIPLET}/libzvbi-chains.so*
-      - -usr/lib/${CRAFT_ARCH_TRIPLET}/mfx
-      - -usr/lib/${CRAFT_ARCH_TRIPLET}/pulseaudio
-      - -usr/lib/${CRAFT_ARCH_TRIPLET}/vdpau
+      - usr/lib/*/gstreamer-1.0/libgstlibav.so
+      - usr/lib/*/libavfilter.so.*
+      - usr/lib/*/libavformat.so.*
+      - usr/lib/*/libavcodec.so.*
+      - usr/lib/*/libavutil.so.*
+      - usr/lib/*/libswscale.so.*
+      - usr/lib/*/libpostproc.so.*
+      - usr/lib/*/libswresample.so.*
+      - usr/lib/*/libpocketsphinx.so.*
+      - usr/lib/*/libsphinxbase.so.*
+      - usr/lib/*/libbs2b.so.*
+      - usr/lib/*/liblilv-0.so.*
+      - usr/lib/*/librubberband.so.*
+      - usr/lib/*/libmysofa.so.*
+      - usr/lib/*/libflite_cmu_us_awb.so.*
+      - usr/lib/*/libflite_cmu_us_kal.so.*
+      - usr/lib/*/libflite_cmu_us_kal16.so.*
+      - usr/lib/*/libflite_cmu_us_rms.so.*
+      - usr/lib/*/libflite_cmu_us_slt.so.*
+      - usr/lib/*/libflite.so.*
+      - usr/lib/*/libass.so.*
+      - usr/lib/*/libvidstab.so.*
+      - usr/lib/*/libzmq.so.*
+      - usr/lib/*/libzimg.so.*
+      - usr/lib/*/libOpenCL.so.*
+      - usr/lib/*/libmfx.so.*
+      - usr/lib/*/libgme.so.*
+      - usr/lib/*/libopenmpt.so.*
+      - usr/lib/*/libchromaprint.so.*
+      - usr/lib/*/libbluray.so.*
+      - usr/lib/*/librabbitmq.so.*
+      - usr/lib/*/libsrt-gnutls.so.*
+      - usr/lib/*/libssh-gcrypt.so.*
+      - usr/lib/*/libdav1d.so.*
+      - usr/lib/*/librsvg-2.so.*
+      - usr/lib/*/libzvbi.so.*
+      - usr/lib/*/libsnappy.so.*
+      - usr/lib/*/libaom.so.*
+      - usr/lib/*/libcodec2.so.*
+      - usr/lib/*/libgsm.so.*
+      - usr/lib/*/libshine.so.*
+      - usr/lib/*/libx264.so.*
+      - usr/lib/*/libx265.so.*
+      - usr/lib/*/libxvidcore.so.*
+      - usr/lib/*/libvdpau.so.*
+      - usr/lib/*/libsoxr.so.*
+      - usr/lib/*/blas/libblas.so.*
+      - usr/lib/*/lapack/liblapack.so.*
+      - usr/lib/*/libserd-0.so.*
+      - usr/lib/*/libsord-0.so.*
+      - usr/lib/*/libsratom-0.so.*
+      - usr/lib/*/libflite_usenglish.so.*
+      - usr/lib/*/libflite_cmulex.so.*
+      - usr/lib/*/libsodium.so.*
+      - usr/lib/*/libpgm-5.3.so.*
+      - usr/lib/*/libnorm.so.*
+      - usr/lib/*/libudfread.so.*
+      - usr/lib/*/libnuma.so.*
+      - usr/lib/*/libgfortran.so.*
+      - usr/lib/*/libjansson.so.*
+      - usr/lib/*/libturbojpeg.so.*
 
   # Find files provided by the base and platform snap and ensure they aren't
   # duplicated in this snap
@@ -186,4 +204,3 @@ parts:
       for snap in "core22" "gtk-common-themes" "gnome-42-2204"; do
         cd "/snap/$snap/current" && find . -type f,l -name *.so.* -exec rm -f "$CRAFT_PRIME/{}" \;
       done
-
