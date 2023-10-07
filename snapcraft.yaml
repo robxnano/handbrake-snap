@@ -62,10 +62,11 @@ parts:
   handbrake:
     after: [rust-toolchain]
     source-type: git
-    source: https://github.com/robxnano/handbrake.git # change for official release
-    source-branch: snap # change for official release
+    source: https://github.com/handbrake/handbrake.git
     parse-info: [usr/share/metainfo/fr.handbrake.ghb.metainfo.xml]
     plugin: make
+    build-environment:
+      - CFLAGS: '-I/snap/gnome-42-2204-sdk/current/usr/include'
     override-pull: |
       craftctl default
       craftctl set version="`gtk/data/version.sh`"
