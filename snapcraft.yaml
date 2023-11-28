@@ -9,7 +9,7 @@ architectures:
   - build-on: arm64
 
 apps:
-  handbrake:
+  handbrake-gui: # Change to 'handbrake' for official release
     command: usr/bin/ghb
     common-id: fr.handbrake.ghb.desktop
     desktop: usr/share/applications/fr.handbrake.ghb.desktop
@@ -62,7 +62,7 @@ parts:
   handbrake:
     after: [rust-toolchain]
     source-type: git
-    source: https://github.com/handbrake/handbrake.git
+    source: https://github.com/HandBrake/HandBrake.git
     source-tag: '1.7.1'
     parse-info: [usr/share/metainfo/fr.handbrake.ghb.metainfo.xml]
     plugin: make
@@ -82,7 +82,7 @@ parts:
       else
         FLAG_QSV=--disable-qsv
       fi
-      ${CRAFT_PART_SRC}/configure --prefix=/usr "$FLAG_QSV" --disable-nvenc --disable-nvdec --disable-vce --snap
+      ${CRAFT_PART_SRC}/configure --prefix=/usr "$FLAG_QSV" --disable-nvenc --disable-nvdec --disable-vce
       craftctl default
     build-packages:
       - autoconf
