@@ -68,6 +68,7 @@ parts:
     plugin: make
     build-environment:
       - CFLAGS: '-I/snap/gnome-42-2204-sdk/current/usr/include'
+      - GI_TYPELIB_PATH: '/snap/gnome-42-2204-sdk/current/usr/lib/$CRAFT_ARCH_TRIPLET/girepository-1.0'
     override-pull: |
       craftctl default
       craftctl set version="`gtk/data/version.sh`"
@@ -82,12 +83,13 @@ parts:
       else
         FLAG_QSV=--disable-qsv
       fi
-      ${CRAFT_PART_SRC}/configure --prefix=/usr "$FLAG_QSV" --disable-nvenc --disable-nvdec --disable-vce
+      ${CRAFT_PART_SRC}/configure --prefix=/usr "$FLAG_QSV" --enable-nvenc --enable-nvdec --enable-vce
       craftctl default
     build-packages:
       - autoconf
       - automake
       - autopoint
+      - clang
       - cmake
       - curl
       - libass-dev
