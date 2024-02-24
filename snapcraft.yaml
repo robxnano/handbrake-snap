@@ -21,8 +21,9 @@ apps:
       - shutdown
       - upower-observe
     environment:
-      LIBVA_DRIVERS_PATH: $SNAP/intel-plugin/lib/$CRAFT_ARCH_TRIPLET/dri
-      LD_LIBRARY_PATH: $LD_LIBRARY_PATH:$SNAP/intel-plugin/lib/$CRAFT_ARCH_TRIPLET:$SNAP/usr/lib/${CRAFT_ARCH_TRIPLET}/blas:$SNAP/usr/lib/${CRAFT_ARCH_TRIPLET}/lapack
+      GDK_DEBUG: portals
+      LIBVA_DRIVERS_PATH: $SNAP/intel-plugin/lib/${CRAFT_ARCH_TRIPLET_BUILD_FOR}/dri
+      LD_LIBRARY_PATH: $LD_LIBRARY_PATH:$SNAP/intel-plugin/lib/${CRAFT_ARCH_TRIPLET_BUILD_FOR}
   cli:
     command: usr/bin/HandBrakeCLI
     common-id: fr.handbrake.HandBrakeCLI
@@ -31,8 +32,8 @@ apps:
       - home
       - removable-media
     environment:
-      LIBVA_DRIVERS_PATH: $SNAP/intel-plugin/lib/$CRAFT_ARCH_TRIPLET/dri
-      LD_LIBRARY_PATH: $LD_LIBRARY_PATH:$SNAP/intel-plugin/lib/$CRAFT_ARCH_TRIPLET
+      LIBVA_DRIVERS_PATH: $SNAP/intel-plugin/lib/${CRAFT_ARCH_TRIPLET_BUILD_FOR}/dri
+      LD_LIBRARY_PATH: $LD_LIBRARY_PATH:$SNAP/intel-plugin/lib/${CRAFT_ARCH_TRIPLET_BUILD_FOR}
 
 # Allows plugins for hardware acceleration to be mounted
 plugs:
@@ -62,13 +63,12 @@ parts:
   handbrake:
     after: [rust-toolchain]
     source-type: git
-    source: https://github.com/HandBrake/HandBrake.git
-    source-tag: '1.7.3'
+    source: https://github.com/robxnano/HandBrake.git
+    source-tag: 'gtk4'
     parse-info: [usr/share/metainfo/fr.handbrake.ghb.metainfo.xml]
     plugin: make
     build-environment:
       - CFLAGS: '-I/snap/gnome-42-2204-sdk/current/usr/include'
-      - GI_TYPELIB_PATH: '/snap/gnome-42-2204-sdk/current/usr/lib/$CRAFT_ARCH_TRIPLET/girepository-1.0'
     override-pull: |
       craftctl default
       craftctl set version="`gtk/data/version.sh`"
@@ -78,12 +78,12 @@ parts:
       rm -rf build
       mkdir -p build
       cd build
-      if [ "$CRAFT_TARGET_ARCH" = "amd64" ]; then
+      if [ "$CRAFT_ARCH_BUILD_FOR" = "amd64" ]; then
         FLAG_QSV=--enable-qsv
       else
         FLAG_QSV=--disable-qsv
       fi
-      ${CRAFT_PART_SRC}/configure --prefix=/usr "$FLAG_QSV" --enable-nvenc --enable-nvdec --enable-vce
+      ${CRAFT_PART_SRC}/configure --prefix=/usr "$FLAG_QSV" --enable-nvenc --enable-nvdec --enable-vce --enable-libdovi
       craftctl default
     build-packages:
       - autoconf
@@ -94,7 +94,6 @@ parts:
       - curl
       - libass-dev
       - libbz2-dev
-      - libgstreamer-plugins-bad1.0-dev
       - libicu-dev
       - libjansson-dev
       - libmp3lame-dev
@@ -112,11 +111,11 @@ parts:
     prime:
       - -usr/etc
       - -usr/include
-      - -usr/lib/$CRAFT_ARCH_TRIPLET/cmake
-      - -usr/lib/$CRAFT_ARCH_TRIPLET/lib*.a
-      - -usr/lib/$CRAFT_ARCH_TRIPLET/lib*.la
-      - -usr/lib/$CRAFT_ARCH_TRIPLET/lib*.so
-      - -usr/lib/$CRAFT_ARCH_TRIPLET/pkgconfig
+      - -usr/lib/*/cmake
+      - -usr/lib/*/lib*.a
+      - -usr/lib/*/lib*.la
+      - -usr/lib/*/lib*.so
+      - -usr/lib/*/pkgconfig
       - -usr/lib/pkgconfig
       - -usr/share/doc
       - -usr/share/ffmpeg
@@ -127,9 +126,7 @@ parts:
   libraries:
     plugin: nil
     stage-packages:
-      - gstreamer1.0-libav
       - libass9
-      - libblas3
       - libjansson4
       - libnuma1
       - libturbojpeg
