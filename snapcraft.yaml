@@ -63,8 +63,7 @@ parts:
   handbrake:
     after: [rust-toolchain]
     source-type: git
-    source: https://github.com/robxnano/HandBrake.git
-    source-tag: 'gtk4'
+    source: https://github.com/handbrake/HandBrake.git
     parse-info: [usr/share/metainfo/fr.handbrake.ghb.metainfo.xml]
     plugin: make
     build-environment:
