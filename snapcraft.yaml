@@ -2,11 +2,8 @@ name: handbrake-gui # Change to 'handbrake' for official release
 adopt-info: handbrake
 grade: stable
 confinement: strict
-base: core22
+base: core24
 compression: lzo
-architectures:
-  - build-on: amd64
-  - build-on: arm64
 
 apps:
   handbrake-gui: # Change to 'handbrake' for official release
@@ -18,7 +15,6 @@ apps:
       - home
       - removable-media
       - screen-inhibit-control
-      - shutdown
       - upower-observe
     environment:
       GDK_DEBUG: portals
@@ -37,13 +33,13 @@ apps:
 
 # Allows plugins for hardware acceleration to be mounted
 plugs:
-  intel-0-2204: # plugin_name-api_version-ubuntu_base
+  intel-0-2404: # plugin_name-api_version-ubuntu_base
     interface: content
-    content: intel-0-2204
+    content: intel-0-2404
     target: $SNAP/intel-plugin/lib
 
 parts:
-  # cargo-c is not in Ubuntu 22.04 so use rustup to install the toolchain
+  # libdovi needs a newer toolchain than Ubuntu 24.04 provides
   rust-toolchain:
     plugin: nil
     override-pull: |
@@ -63,14 +59,17 @@ parts:
   handbrake:
     after: [rust-toolchain]
     source-type: git
-    source: https://github.com/handbrake/HandBrake.git
+    source: https://github.com/HandBrake/HandBrake.git
+    source-tag: '1.8.2'
     parse-info: [usr/share/metainfo/fr.handbrake.ghb.metainfo.xml]
     plugin: make
     build-environment:
-      - CFLAGS: '-I/snap/gnome-42-2204-sdk/current/usr/include'
+      - CFLAGS: '-I/snap/gnome-46-2404-sdk/current/usr/include'
+      - CC: 'cc'
+      - CXX: 'c++'
     override-pull: |
       craftctl default
-      craftctl set version="`gtk/data/version.sh`"
+      craftctl set version="`gtk/data/version.py`"
     override-build: |
       source "$HOME/.cargo/env"
       cd ..
@@ -129,7 +128,7 @@ parts:
       - libjansson4
       - libnuma1
       - libturbojpeg
-      - libx264-163
+      - libx264-164
     prime:
       - usr/lib/*/gstreamer-1.0/libgstlibav.so
       - usr/lib/*/libavfilter.so.*
@@ -192,15 +191,16 @@ parts:
       - usr/lib/*/libgfortran.so.*
       - usr/lib/*/libjansson.so.*
       - usr/lib/*/libturbojpeg.so.*
+      - usr/lib/*/libunibreak.so.*
 
   # Find files provided by the base and platform snap and ensure they aren't
   # duplicated in this snap
   cleanup:
     after: [libraries]
     plugin: nil
-    build-snaps: [core22, gtk-common-themes, gnome-42-2204]
+    build-snaps: [core24, gtk-common-themes, gnome-46-2404]
     override-prime: |
       set -eux
-      for snap in "core22" "gtk-common-themes" "gnome-42-2204"; do
+      for snap in "core24" "gtk-common-themes" "gnome-46-2404"; do
         cd "/snap/$snap/current" && find . -type f,l -name *.so.* -exec rm -f "$CRAFT_PRIME/{}" \;
       done
