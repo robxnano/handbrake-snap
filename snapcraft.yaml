@@ -6,10 +6,7 @@ base: core24
 compression: lzo
 platforms:
   amd64:
-    build-for: amd64
   arm64:
-    build-on: [amd64, arm64]
-    build-for: arm64
 
 apps:
   handbrake-gui: # Change to 'handbrake' for official release
@@ -66,16 +63,16 @@ parts:
     after: [rust-toolchain]
     source-type: git
     source: https://github.com/HandBrake/HandBrake.git
-    source-tag: '1.8.2'
+    source-tag: '1.9.0'
     parse-info: [usr/share/metainfo/fr.handbrake.ghb.metainfo.xml]
     plugin: make
     build-environment:
-      - CFLAGS: '-I/snap/gnome-46-2404-sdk/current/usr/include'
       - CC: 'cc'
       - CXX: 'c++'
     override-pull: |
       craftctl default
-      craftctl set version="`gtk/data/version.py`"
+      patch -p1 < "${CRAFT_PROJECT_DIR}/handbrake-snap.patch"
+      craftctl set version="$(gtk/data/version.py)"
     override-build: |
       source "$HOME/.cargo/env"
       cd ..
@@ -87,7 +84,7 @@ parts:
       else
         FLAG_QSV=--disable-qsv
       fi
-      ${CRAFT_PART_SRC}/configure --prefix=/usr "$FLAG_QSV" --enable-nvenc --enable-nvdec --enable-vce --enable-libdovi
+      ${CRAFT_PART_SRC}/configure --snap --prefix=/usr "$FLAG_QSV" --enable-nvenc --enable-nvdec --enable-vce --enable-libdovi
       craftctl default
     build-packages:
       - autoconf
@@ -125,79 +122,19 @@ parts:
       - -usr/share/ffmpeg
       - -usr/share/vpl
 
-  # Only include libraries required by ghb or libgstlibav.so which are not in
-  # the base or platform snap
   libraries:
     plugin: nil
     stage-packages:
       - libass9
-      - libjansson4
       - libnuma1
       - libturbojpeg
       - libx264-164
     prime:
-      - usr/lib/*/gstreamer-1.0/libgstlibav.so
-      - usr/lib/*/libavfilter.so.*
-      - usr/lib/*/libavformat.so.*
-      - usr/lib/*/libavcodec.so.*
-      - usr/lib/*/libavutil.so.*
-      - usr/lib/*/libswscale.so.*
-      - usr/lib/*/libpostproc.so.*
-      - usr/lib/*/libswresample.so.*
-      - usr/lib/*/libpocketsphinx.so.*
-      - usr/lib/*/libsphinxbase.so.*
-      - usr/lib/*/libbs2b.so.*
-      - usr/lib/*/liblilv-0.so.*
-      - usr/lib/*/librubberband.so.*
-      - usr/lib/*/libmysofa.so.*
-      - usr/lib/*/libflite_cmu_us_awb.so.*
-      - usr/lib/*/libflite_cmu_us_kal.so.*
-      - usr/lib/*/libflite_cmu_us_kal16.so.*
-      - usr/lib/*/libflite_cmu_us_rms.so.*
-      - usr/lib/*/libflite_cmu_us_slt.so.*
-      - usr/lib/*/libflite.so.*
       - usr/lib/*/libass.so.*
-      - usr/lib/*/libvidstab.so.*
-      - usr/lib/*/libzmq.so.*
-      - usr/lib/*/libzimg.so.*
-      - usr/lib/*/libOpenCL.so.*
-      - usr/lib/*/libmfx.so.*
-      - usr/lib/*/libgme.so.*
-      - usr/lib/*/libopenmpt.so.*
-      - usr/lib/*/libchromaprint.so.*
-      - usr/lib/*/libbluray.so.*
-      - usr/lib/*/librabbitmq.so.*
-      - usr/lib/*/libsrt-gnutls.so.*
-      - usr/lib/*/libssh-gcrypt.so.*
-      - usr/lib/*/libdav1d.so.*
-      - usr/lib/*/librsvg-2.so.*
-      - usr/lib/*/libzvbi.so.*
-      - usr/lib/*/libsnappy.so.*
-      - usr/lib/*/libaom.so.*
-      - usr/lib/*/libcodec2.so.*
-      - usr/lib/*/libgsm.so.*
-      - usr/lib/*/libshine.so.*
-      - usr/lib/*/libx264.so.*
-      - usr/lib/*/libx265.so.*
-      - usr/lib/*/libxvidcore.so.*
-      - usr/lib/*/libvdpau.so.*
-      - usr/lib/*/libsoxr.so.*
-      - usr/lib/*/blas/libblas.so.*
-      - usr/lib/*/lapack/liblapack.so.*
-      - usr/lib/*/libserd-0.so.*
-      - usr/lib/*/libsord-0.so.*
-      - usr/lib/*/libsratom-0.so.*
-      - usr/lib/*/libflite_usenglish.so.*
-      - usr/lib/*/libflite_cmulex.so.*
-      - usr/lib/*/libsodium.so.*
-      - usr/lib/*/libpgm-5.3.so.*
-      - usr/lib/*/libnorm.so.*
-      - usr/lib/*/libudfread.so.*
       - usr/lib/*/libnuma.so.*
-      - usr/lib/*/libgfortran.so.*
-      - usr/lib/*/libjansson.so.*
       - usr/lib/*/libturbojpeg.so.*
       - usr/lib/*/libunibreak.so.*
+      - usr/lib/*/libx264.so.*
 
   # Find files provided by the base and platform snap and ensure they aren't
   # duplicated in this snap

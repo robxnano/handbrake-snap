@@ -1,0 +1,92 @@
+diff --git a/libhb/module.defs b/libhb/module.defs
+index 177ddefe4..58c39717c 100644
+--- a/libhb/module.defs
++++ b/libhb/module.defs
+@@ -14,6 +14,9 @@ $(eval $(call import.MODULE.defs,LIBHB,libhb,$(__deps__)))
+ $(eval $(call import.GCC,LIBHB))
+ $(eval $(call import.METAL,LIBHB))
+ 
++LIBHB.PKGCONFIG.env = PKG_CONFIG_PATH="$(call fn.ABSOLUTE,$(CONTRIB.build/))lib/pkgconfig:$(PKG_CONFIG_PATH)"
++LIBHB.PKGCONFIG.exe = $(LIBHB.PKGCONFIG.env) $(PKGCONFIG.exe)
++
+ ###############################################################################
+ 
+ LIBHB.src/   = $(SRC/)libhb/
+@@ -63,6 +66,12 @@ ifneq (,$(filter $(HOST.system),freebsd netbsd openbsd))
+     LIBHB.GCC.I += $(LOCALBASE)/include
+ endif
+ 
++LIBHB.pkgconfig_libs = libva
++
++ifeq (1,$(FEATURE.snap))
++    LIBHB.GCC.pkgconf_i += $(shell $(LIBHB.PKGCONFIG.exe) --cflags $(LIBHB.pkgconfig_libs))
++endif
++
+ ifeq ($(HOST.system),cygwin)
+     LIBHB.GCC.D += SYS_CYGWIN
+ else ifeq ($(HOST.system),darwin)
+diff --git a/make/configure.py b/make/configure.py
+index a383cb363..9f5289bdc 100644
+--- a/make/configure.py
++++ b/make/configure.py
+@@ -1358,6 +1358,8 @@ def createCLI( cross = None ):
+     grp.add_argument( '--snapshot', default=False, action='store_true', help='Force a snapshot build' )
+     h = IfHost( 'Build extra contribs for flatpak packaging', '*-*-linux*', none=argparse.SUPPRESS ).value
+     grp.add_argument( '--flatpak', default=False, action='store_true', help=h )
++    h = IfHost( 'Build extra contribs for snap packaging', '*-*-linux*', none=argparse.SUPPRESS ).value
++    grp.add_argument( '--snap', default=False, action='store_true', help=h )
+     cli.add_argument_group( grp )
+ 
+     ## add compiler options
+@@ -2080,6 +2082,7 @@ int main()
+     doc.add( 'FEATURE.fdk_aac',    int( options.enable_fdk_aac ))
+     doc.add( 'FEATURE.ffmpeg_aac', int( options.enable_ffmpeg_aac ))
+     doc.add( 'FEATURE.flatpak',    int( options.flatpak ))
++    doc.add( 'FEATURE.snap',       int( options.snap ))
+     doc.add( 'FEATURE.gtk',        int( options.enable_gtk ))
+     doc.add( 'FEATURE.mf',         int( options.enable_mf ))
+     doc.add( 'FEATURE.nvenc',      int( options.enable_nvenc ))
+diff --git a/make/include/gcc.defs b/make/include/gcc.defs
+index 00cfcf1ae..d04c014b4 100644
+--- a/make/include/gcc.defs
++++ b/make/include/gcc.defs
+@@ -87,6 +87,7 @@ GCC.args.F                 = -F$(1)
+ GCC.args.f                 = -framework $(1)
+ GCC.args.L                 = -L$(1)
+ GCC.args.l                 = -l$(1)
++GCC.args.pkgconf_i         = $(1)
+ GCC.args.pkgconfig         = $(1)
+ GCC.args.end               = -Wl,--end-group
+ 
+@@ -183,6 +184,7 @@ define import.GCC
+     $(1).GCC.args.lto.thin  = $$(GCC.args.lto.thin)
+     $(1).GCC.args.D         = $$(GCC.args.D)
+     $(1).GCC.args.I         = $$(GCC.args.I)
++    $(1).GCC.args.pkgconf_i = $$(GCC.args.pkgconf_i)
+     $(1).GCC.args.muldefs   = $$(GCC.args.muldefs)
+     $(1).GCC.args.start     = $$(GCC.args.start)
+     $(1).GCC.args.F         = $$(GCC.args.F)
+@@ -208,19 +210,19 @@ define import.GCC
+     $(1).GCC.o = -o $$(3)
+ 
+     # FUNCTION: C precompiled headers
+-    $(1).GCC.H_O.args = !gcc ?c_std ?pipe ?ML ?H *W *archs *sysroot *minver ?vis ?pic .g .O ?extra ?extra.h_o .cpu .lto *D *I !c !o
++    $(1).GCC.H_O.args = !gcc ?c_std ?pipe ?ML ?H *W *archs *sysroot *minver ?vis ?pic .g .O ?extra ?extra.h_o .cpu .lto *D *I !pkgconf_i !c !o
+     $(1).GCC.H_O = $$(call fn.ARGS,$(1).GCC,$$($(1).GCC.H_O.args),$$(1),$$(2))
+ 
+     # FUNCTION: C compile source
+-    $(1).GCC.C_O.args = !gcc ?c_std ?pipe ?ML ?H *W *archs *sysroot *minver ?vis ?pic .g .O ?extra ?extra.c_o .cpu .lto *D *I !c !o
++    $(1).GCC.C_O.args = !gcc ?c_std ?pipe ?ML ?H *W *archs *sysroot *minver ?vis ?pic .g .O ?extra ?extra.c_o .cpu .lto *D *I !pkgconf_i !c !o
+     $(1).GCC.C_O = $$(call fn.ARGS,$(1).GCC,$$($(1).GCC.C_O.args),$$(1),$$(2))
+ 
+     # FUNCTION: C++ precompile headers
+-    $(1).GCC.HPP_O.args = !gxx ?cxx_std ?pipe ?ML ?H *W *archs *sysroot *minver ?vis ?pic .g .O ?extra ?extra.hpp_o .cpu .lto *D *I !c !o
++    $(1).GCC.HPP_O.args = !gxx ?cxx_std ?pipe ?ML ?H *W *archs *sysroot *minver ?vis ?pic .g .O ?extra ?extra.hpp_o .cpu .lto *D *I !pkgconf_i !c !o
+     $(1).GCC.HPP_O = $$(call fn.ARGS,$(1).GCC,$$($(1).GCC.HPP_O.args),$$(1),$$(2))
+ 
+     # FUNCTION: C++ compile source
+-    $(1).GCC.CPP_O.args = !gxx ?cxx_std ?pipe ?ML ?H *W *archs *sysroot *minver ?vis ?pic .g .O ?extra ?extra.cpp_o .cpu .lto *D *I !c !o
++    $(1).GCC.CPP_O.args = !gxx ?cxx_std ?pipe ?ML ?H *W *archs *sysroot *minver ?vis ?pic .g .O ?extra ?extra.cpp_o .cpu .lto *D *I !pkgconf_i !c !o
+     $(1).GCC.CPP_O = $$(call fn.ARGS,$(1).GCC,$$($(1).GCC.CPP_O.args),$$(1),$$(2))
+ 
+     ###########################################################################
