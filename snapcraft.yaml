@@ -63,7 +63,7 @@ parts:
     after: [rust-toolchain]
     source-type: git
     source: https://github.com/HandBrake/HandBrake.git
-    source-tag: '1.9.0'
+    source-tag: '1.9.0' 
     parse-info: [usr/share/metainfo/fr.handbrake.ghb.metainfo.xml]
     plugin: make
     build-environment:
@@ -71,7 +71,7 @@ parts:
       - CXX: 'c++'
     override-pull: |
       craftctl default
-      patch -p1 < "${CRAFT_PROJECT_DIR}/handbrake-snap.patch"
+      git apply ${CRAFT_PROJECT_DIR}/handbrake-snap.patch
       craftctl set version="$(gtk/data/version.py)"
     override-build: |
       source "$HOME/.cargo/env"
@@ -93,7 +93,6 @@ parts:
       - clang
       - cmake
       - curl
-      - libass-dev
       - libbz2-dev
       - libicu-dev
       - libjansson-dev
@@ -104,10 +103,8 @@ parts:
       - libtheora-dev
       - libtool
       - libtool-bin
-      - libturbojpeg0-dev
       - libvorbis-dev
       - libvpx-dev
-      - libx264-dev
       - nasm
     prime:
       - -usr/etc
@@ -122,24 +119,10 @@ parts:
       - -usr/share/ffmpeg
       - -usr/share/vpl
 
-  libraries:
-    plugin: nil
-    stage-packages:
-      - libass9
-      - libnuma1
-      - libturbojpeg
-      - libx264-164
-    prime:
-      - usr/lib/*/libass.so.*
-      - usr/lib/*/libnuma.so.*
-      - usr/lib/*/libturbojpeg.so.*
-      - usr/lib/*/libunibreak.so.*
-      - usr/lib/*/libx264.so.*
-
   # Find files provided by the base and platform snap and ensure they aren't
   # duplicated in this snap
   cleanup:
-    after: [libraries]
+    after: [handbrake]
     plugin: nil
     build-snaps: [core24, gtk-common-themes, gnome-46-2404]
     override-prime: |

@@ -1,5 +1,40 @@
+From 6a7d270e81c2a9336d7f083977d0ae3394b838c8 Mon Sep 17 00:00:00 2001
+From: robxnano <89391914+robxnano@users.noreply.github.com>
+Date: Fri, 31 Jan 2025 14:38:46 +0000
+Subject: [PATCH] snap: Support snapcraft build
+
+---
+ contrib/libass/module.defs |  4 ++--
+ libhb/module.defs          |  9 +++++++++
+ make/configure.py          |  3 +++
+ make/include/gcc.defs      | 10 ++++++----
+ make/include/main.defs     |  6 ++++++
+ 5 files changed, 26 insertions(+), 6 deletions(-)
+
+diff --git a/contrib/libass/module.defs b/contrib/libass/module.defs
+index 2f64e29a4..837fb1296 100644
+--- a/contrib/libass/module.defs
++++ b/contrib/libass/module.defs
+@@ -16,7 +16,7 @@ LIBASS.GCC.args.c_std =
+ LIBASS.GCC.args.extra += $(LIBASS.GCC.args.O.$(LIBASS.GCC.O))
+ 
+ # Tell configure where to find our versions of these libs
+-ifneq (1,$(FEATURE.flatpak))
++ifeq (0-0,$(FEATURE.flatpak)-$(FEATURE.snap))
+ LIBASS.CONFIGURE.extra = \
+     HARFBUZZ_LIBS="-L$(call fn.ABSOLUTE,$(CONTRIB.build/))lib -lharfbuzz" \
+     HARFBUZZ_CFLAGS="-I$(call fn.ABSOLUTE,$(CONTRIB.build/))include/harfbuzz" \
+@@ -27,7 +27,7 @@ endif
+ ifeq (,$(filter $(HOST.system),darwin cygwin mingw))
+     # Tell configure where to find our version of fontconfig
+     LIBASS.CONFIGURE.extra += --enable-fontconfig
+-ifneq (1,$(FEATURE.flatpak))
++ifeq (0-0,$(FEATURE.flatpak)-$(FEATURE.snap))
+     LIBASS.CONFIGURE.extra += \
+         FONTCONFIG_LIBS="-L$(call fn.ABSOLUTE,$(CONTRIB.build/))lib -lfontconfig" \
+         FONTCONFIG_CFLAGS="-I$(call fn.ABSOLUTE,$(CONTRIB.build/))include"
 diff --git a/libhb/module.defs b/libhb/module.defs
-index 177ddefe4..58c39717c 100644
+index 177ddefe4..98dd57e63 100644
 --- a/libhb/module.defs
 +++ b/libhb/module.defs
 @@ -14,6 +14,9 @@ $(eval $(call import.MODULE.defs,LIBHB,libhb,$(__deps__)))
@@ -26,7 +61,7 @@ index 177ddefe4..58c39717c 100644
      LIBHB.GCC.D += SYS_CYGWIN
  else ifeq ($(HOST.system),darwin)
 diff --git a/make/configure.py b/make/configure.py
-index a383cb363..9f5289bdc 100644
+index a383cb363..a1fafe0a2 100644
 --- a/make/configure.py
 +++ b/make/configure.py
 @@ -1358,6 +1358,8 @@ def createCLI( cross = None ):
@@ -90,3 +125,23 @@ index 00cfcf1ae..d04c014b4 100644
      $(1).GCC.CPP_O = $$(call fn.ARGS,$(1).GCC,$$($(1).GCC.CPP_O.args),$$(1),$$(2))
  
      ###########################################################################
+diff --git a/make/include/main.defs b/make/include/main.defs
+index e073a2259..8c70f3148 100644
+--- a/make/include/main.defs
++++ b/make/include/main.defs
+@@ -37,6 +37,12 @@ ifeq (1,$(FEATURE.flatpak))
+     MODULES += contrib/x264
+ endif
+ 
++ifeq (1,$(FEATURE.snap))
++    MODULES += contrib/libass
++    MODULES += contrib/libjpeg-turbo
++    MODULES += contrib/x264
++endif
++
+ ifeq (1,$(FEATURE.fdk_aac))
+     MODULES += contrib/fdk-aac
+ endif
+-- 
+2.43.0
+
