@@ -1,0 +1,76 @@
+From 1ce232ac88e6324d6a70419e537c945589e7e27f Mon Sep 17 00:00:00 2001
+From: robxnano <89391914+robxnano@users.noreply.github.com>
+Date: Fri, 31 Jan 2025 14:23:37 +0000
+Subject: [PATCH 1/6] make: Add --snap flag to configure script
+
+This flag builds some extra libraries which are not part of
+the platform snap, currently libass, x264 and libjpeg-turbo.
+---
+ contrib/libass/module.defs | 4 ++--
+ make/configure.py          | 3 +++
+ make/include/main.defs     | 6 ++++++
+ 3 files changed, 11 insertions(+), 2 deletions(-)
+
+diff --git a/contrib/libass/module.defs b/contrib/libass/module.defs
+index bee1f42c5..0078eaf3f 100644
+--- a/contrib/libass/module.defs
++++ b/contrib/libass/module.defs
+@@ -16,7 +16,7 @@ LIBASS.GCC.args.c_std =
+ LIBASS.GCC.args.extra += $(LIBASS.GCC.args.O.$(LIBASS.GCC.O))
+ 
+ # Tell configure where to find our versions of these libs
+-ifneq (1,$(FEATURE.flatpak))
++ifeq (0-0,$(FEATURE.flatpak)-$(FEATURE.snap))
+ LIBASS.CONFIGURE.extra = \
+     HARFBUZZ_LIBS="-L$(call fn.ABSOLUTE,$(CONTRIB.build/))lib -lharfbuzz" \
+     HARFBUZZ_CFLAGS="-I$(call fn.ABSOLUTE,$(CONTRIB.build/))include/harfbuzz" \
+@@ -27,7 +27,7 @@ endif
+ ifeq (,$(filter $(HOST.system),darwin cygwin mingw))
+     # Tell configure where to find our version of fontconfig
+     LIBASS.CONFIGURE.extra += --enable-fontconfig
+-ifneq (1,$(FEATURE.flatpak))
++ifeq (0-0,$(FEATURE.flatpak)-$(FEATURE.snap))
+     LIBASS.CONFIGURE.extra += \
+         FONTCONFIG_LIBS="-L$(call fn.ABSOLUTE,$(CONTRIB.build/))lib -lfontconfig" \
+         FONTCONFIG_CFLAGS="-I$(call fn.ABSOLUTE,$(CONTRIB.build/))include"
+diff --git a/make/configure.py b/make/configure.py
+index 25640d993..fff151868 100644
+--- a/make/configure.py
++++ b/make/configure.py
+@@ -1358,6 +1358,8 @@ def createCLI( cross = None ):
+     grp.add_argument( '--snapshot', default=False, action='store_true', help='Force a snapshot build' )
+     h = IfHost( 'Build extra contribs for flatpak packaging', '*-*-linux*', none=argparse.SUPPRESS ).value
+     grp.add_argument( '--flatpak', default=False, action='store_true', help=h )
++    h = IfHost( 'Build extra contribs for snap packaging', '*-*-linux*', none=argparse.SUPPRESS ).value
++    grp.add_argument( '--snap', default=False, action='store_true', help=h )
+     cli.add_argument_group( grp )
+ 
+     ## add compiler options
+@@ -2087,6 +2089,7 @@ int main()
+     doc.add( 'FEATURE.fdk_aac',    int( options.enable_fdk_aac ))
+     doc.add( 'FEATURE.ffmpeg_aac', int( options.enable_ffmpeg_aac ))
+     doc.add( 'FEATURE.flatpak',    int( options.flatpak ))
++    doc.add( 'FEATURE.snap',       int( options.snap ))
+     doc.add( 'FEATURE.gtk',        int( options.enable_gtk ))
+     doc.add( 'FEATURE.mf',         int( options.enable_mf ))
+     doc.add( 'FEATURE.nvenc',      int( options.enable_nvenc ))
+diff --git a/make/include/main.defs b/make/include/main.defs
+index e073a2259..8c70f3148 100644
+--- a/make/include/main.defs
++++ b/make/include/main.defs
+@@ -37,6 +37,12 @@ ifeq (1,$(FEATURE.flatpak))
+     MODULES += contrib/x264
+ endif
+ 
++ifeq (1,$(FEATURE.snap))
++    MODULES += contrib/libass
++    MODULES += contrib/libjpeg-turbo
++    MODULES += contrib/x264
++endif
++
+ ifeq (1,$(FEATURE.fdk_aac))
+     MODULES += contrib/fdk-aac
+ endif
+-- 
+2.51.0
+

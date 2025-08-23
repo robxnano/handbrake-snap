@@ -3,7 +3,7 @@ adopt-info: handbrake
 grade: stable
 confinement: strict
 base: core24
-compression: lzo
+compression: xz
 platforms:
   amd64:
   arm64:
@@ -15,14 +15,15 @@ apps:
     desktop: usr/share/applications/fr.handbrake.ghb.desktop
     extensions: [gnome]
     plugs:
+      - audio-playback
       - home
       - removable-media
       - screen-inhibit-control
       - upower-observe
     environment:
-      GDK_DEBUG: portals
-      LIBVA_DRIVERS_PATH: $SNAP/intel-plugin/lib/${CRAFT_ARCH_TRIPLET_BUILD_FOR}/dri
-      LD_LIBRARY_PATH: $LD_LIBRARY_PATH:$SNAP/intel-plugin/lib/${CRAFT_ARCH_TRIPLET_BUILD_FOR}
+      GST_PLUGIN_PATH: $SNAP/gstreamer-plugin/usr/lib/$CRAFT_ARCH_TRIPLET_BUILD_FOR/gstreamer-1.0
+      LIBVA_DRIVERS_PATH: $SNAP/intel-media/usr/lib/$CRAFT_ARCH_TRIPLET_BUILD_FOR/dri
+      LD_LIBRARY_PATH: ${LD_LIBRARY_PATH:+$LD_LIBRARY_PATH:}$SNAP/intel-media/usr/lib/$CRAFT_ARCH_TRIPLET_BUILD_FOR:$SNAP/gstreamer-plugin/usr/lib/$CRAFT_ARCH_TRIPLET_BUILD_FOR:$SNAP/gnome-platform/usr/lib/$CRAFT_ARCH_TRIPLET_BUILD_FOR/blas:$SNAP/gnome-platform/usr/lib/$CRAFT_ARCH_TRIPLET_BUILD_FOR/lapack
   cli:
     command: usr/bin/HandBrakeCLI
     common-id: fr.handbrake.HandBrakeCLI
@@ -31,61 +32,57 @@ apps:
       - home
       - removable-media
     environment:
-      LIBVA_DRIVERS_PATH: $SNAP/intel-plugin/lib/${CRAFT_ARCH_TRIPLET_BUILD_FOR}/dri
-      LD_LIBRARY_PATH: $LD_LIBRARY_PATH:$SNAP/intel-plugin/lib/${CRAFT_ARCH_TRIPLET_BUILD_FOR}
+      LIBVA_DRIVERS_PATH: $SNAP/intel-media/usr/lib/$CRAFT_ARCH_TRIPLET_BUILD_FOR/dri
+      LD_LIBRARY_PATH: ${LD_LIBRARY_PATH:+$LD_LIBRARY_PATH:}$SNAP/intel-media/usr/lib/$CRAFT_ARCH_TRIPLET_BUILD_FOR
 
-# Allows plugins for hardware acceleration to be mounted
 plugs:
-  intel-0-2404: # plugin_name-api_version-ubuntu_base
+  gstreamer-plugin-2404:
     interface: content
-    content: intel-0-2404
-    target: $SNAP/intel-plugin/lib
+    content: gstreamer-plugin-2404
+    target: $SNAP/gstreamer-plugin/usr
+  intel-media-2404:
+    interface: content
+    content: intel-media-2404
+    target: $SNAP/intel-media/usr
 
 parts:
-  # libdovi needs a newer toolchain than Ubuntu 24.04 provides
   rust-toolchain:
     plugin: nil
-    override-pull: |
-      craftctl default
-      curl https://sh.rustup.rs -sSf | sh -s -- -y --profile minimal
+    build-environment:
+      - PATH: $HOME/.cargo/bin${PATH:+:$PATH}
     override-build: |
-      source "$HOME/.cargo/env"
-      craftctl default
+      rustup default stable
       cargo install cargo-c
     build-packages:
+      - rustup
       - libssl-dev
-      - pkg-config
-      - zlib1g-dev
-    prime:
-      - -**/*
-
   handbrake:
     after: [rust-toolchain]
     source-type: git
     source: https://github.com/HandBrake/HandBrake.git
-    source-tag: '1.9.2'
+    source-tag: '1.10.0'
     parse-info: [usr/share/metainfo/fr.handbrake.ghb.metainfo.xml]
     plugin: make
     build-environment:
-      - CC: 'cc'
-      - CXX: 'c++'
+      - CC: cc
+      - CXX: c++
+      - PATH: $HOME/.cargo/bin${PATH:+:$PATH}
+      - BUILD_FLAGS: --snap --prefix=/usr --build=build-snap --enable-nvenc --enable-nvdec --enable-vce
     override-pull: |
       craftctl default
-      git apply ${CRAFT_PROJECT_DIR}/handbrake-snap.patch
+      git apply ${CRAFT_PROJECT_DIR}/0001-make-Add-snap-flag-to-configure-script.patch
+      git apply ${CRAFT_PROJECT_DIR}/0002-libhb-Fix-include-paths-for-Snap-build.patch
       craftctl set version="$(gtk/data/version.py)"
     override-build: |
-      source "$HOME/.cargo/env"
-      cd ..
-      rm -rf build
-      mkdir -p build
-      cd build
       if [ "$CRAFT_ARCH_BUILD_FOR" = "amd64" ]; then
         FLAG_QSV=--enable-qsv
       else
         FLAG_QSV=--disable-qsv
       fi
-      ${CRAFT_PART_SRC}/configure --snap --prefix=/usr "$FLAG_QSV" --enable-nvenc --enable-nvdec --enable-vce --enable-libdovi
+      $CRAFT_PART_SRC/configure $BUILD_FLAGS $FLAG_QSV
       craftctl default
+    make-parameters:
+      - -C build-snap
     build-packages:
       - autoconf
       - automake
@@ -93,6 +90,7 @@ parts:
       - clang
       - cmake
       - curl
+      - git
       - libbz2-dev
       - libicu-dev
       - libjansson-dev
@@ -106,18 +104,7 @@ parts:
       - libvorbis-dev
       - libvpx-dev
       - nasm
-    prime:
-      - -usr/etc
-      - -usr/include
-      - -usr/lib/*/cmake
-      - -usr/lib/*/lib*.a
-      - -usr/lib/*/lib*.la
-      - -usr/lib/*/lib*.so
-      - -usr/lib/*/pkgconfig
-      - -usr/lib/pkgconfig
-      - -usr/share/doc
-      - -usr/share/ffmpeg
-      - -usr/share/vpl
+      - rustup
 
   # Find files provided by the base and platform snap and ensure they aren't
   # duplicated in this snap
