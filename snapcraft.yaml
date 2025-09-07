@@ -60,7 +60,7 @@ parts:
     after: [rust-toolchain]
     source-type: git
     source: https://github.com/HandBrake/HandBrake.git
-    source-tag: '1.10.1'
+    source-tag: '1.10.2'
     parse-info: [usr/share/metainfo/fr.handbrake.ghb.metainfo.xml]
     plugin: make
     build-environment:
